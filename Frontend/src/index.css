@@ -1,0 +1,12 @@
+@import "tailwindcss/preflight";
+@import "tailwindcss/theme";
+@import "tailwindcss/utilities";
+
+/* App base styles */
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-neutral-950 text-neutral-100;
+}
