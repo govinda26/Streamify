@@ -21,15 +21,37 @@ function Login() {
       if (token) {
         localStorage.setItem("auth_token", token);
       }
-      // try to fetch current user id if available
+      const userPayload = res.data?.data?.user || res.data?.user;
+      if (userPayload?._id) {
+        localStorage.setItem("user_id", userPayload._id);
+      }
+      if (userPayload?.username) {
+        localStorage.setItem("username", userPayload.username);
+      }
+      if (userPayload?.fullName) {
+        localStorage.setItem("full_name", userPayload.fullName);
+      }
+
+      let redirectUsername = userPayload?.username;
+
       await api
         .get("/users/current-user")
         .then((me) => {
-          const userId = me.data?.data?._id || me.data?._id;
+          const currentUser = me.data?.data || me.data;
+          const userId = currentUser?._id;
           if (userId) localStorage.setItem("user_id", userId);
+          if (currentUser?.username) {
+            localStorage.setItem("username", currentUser.username);
+            redirectUsername = currentUser.username;
+          }
         })
         .catch(() => {});
-      navigate("/home", { replace: true });
+
+      if (redirectUsername) {
+        navigate(`/channel/${redirectUsername}`, { replace: true });
+      } else {
+        navigate("/home", { replace: true });
+      }
     } catch (err) {
       console.error("Login error:", err);
       setError(err?.response?.data?.message || err.message || "Login failed");

@@ -4,7 +4,7 @@ function VideoCard({ video }) {
   const { _id, title, thumbnail, views = 0 } = video || {};
 
   return (
-    <Link to={`/videos/${_id}`} className="group block">
+    <Link to={`/video/${_id}`} className="group block">
       <div className="aspect-video w-full overflow-hidden rounded-lg bg-neutral-900">
         {thumbnail ? (
           <img

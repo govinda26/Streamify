@@ -6,54 +6,86 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.model.js";
 
 const getVideoComments = asyncHandler(async (req, res) => {
-  //TODO: get all comments for a video
-  //get video id from params
   const { videoId } = req.params;
   if (!videoId) {
     throw new ApiError(404, "Video does not exists");
   }
 
-  //get page number and limit from query
-  const { page, limit } = req.query;
-  const pageNumber = parseInt(page);
-  const pageSize = parseInt(limit);
+  const { page = 1, limit = 20 } = req.query;
+  const pageNumber = Number(page) > 0 ? Number(page) : 1;
+  const pageSize = Number(limit) > 0 ? Number(limit) : 20;
 
-  //aggregate query
-  const Comments = await Comment.aggregate([
+  const commentsAggregation = await Comment.aggregate([
     {
       $match: {
         video: new mongoose.Types.ObjectId(videoId),
       },
     },
     {
-      $facet: {
-        PageData: [
+      $sort: {
+        createdAt: -1,
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "authorDetails",
+        pipeline: [
           {
-            $count: "totalCount",
+            $project: {
+              username: 1,
+              fullName: 1,
+              avatar: 1,
+            },
           },
         ],
-        Comments: [
+      },
+    },
+    {
+      $addFields: {
+        author: { $first: "$authorDetails" },
+      },
+    },
+    {
+      $project: {
+        authorDetails: 0,
+        __v: 0,
+      },
+    },
+    {
+      $facet: {
+        comments: [
           { $skip: (pageNumber - 1) * pageSize },
-          //total 50
-          //allowed 10
-          //page 2 = 3 - 1 * 10
           { $limit: pageSize },
+        ],
+        totalCount: [
+          {
+            $count: "count",
+          },
         ],
       },
     },
   ]);
-  if (!Comments) {
+
+  if (!commentsAggregation) {
     throw new ApiError(500, "Something went wrong while getting comments");
   }
+
+  const comments = commentsAggregation[0]?.comments || [];
+  const totalCount =
+    commentsAggregation[0]?.totalCount?.[0]?.count || comments.length || 0;
 
   return res.status(200).json(
     new ApiResponse(
       200,
       {
-        Comments: Comments[0]?.Comments,
-        page: page,
-        limit: limit,
-        totalCount: Comments[0].PageData[0].totalCount,
+        Comments: comments,
+        comments,
+        page: pageNumber,
+        limit: pageSize,
+        totalCount,
       },
       "Comments fetched successfully"
     )
