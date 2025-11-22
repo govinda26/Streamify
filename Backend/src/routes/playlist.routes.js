@@ -5,6 +5,7 @@ import {
   deletePlaylist,
   getPlaylistById,
   getUserPlaylists,
+  getCurrentUserPlaylists,
   removeVideoFromPlaylist,
   updatePlaylist,
 } from "../controllers/playlist.controller.js";
@@ -14,17 +15,18 @@ const router = Router();
 
 router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
 
-router.route("/").post(createPlaylist);
+router.route("/create").post(createPlaylist);
+router.route("/add-video").post(addVideoToPlaylist);
+router.route("/remove-video").post(removeVideoFromPlaylist);
+router.route("/user").get(getCurrentUserPlaylists);
+
+router.route("/channel/:userId").get(getUserPlaylists);
 
 router
   .route("/:playlistId")
-  .get(getPlaylistById)
-  .patch(updatePlaylist)
-  .delete(deletePlaylist);
+  .delete(deletePlaylist)
+  .patch(updatePlaylist);
 
-router.route("/add/:videoId/:playlistId").patch(addVideoToPlaylist);
-router.route("/remove/:videoId/:playlistId").patch(removeVideoFromPlaylist);
-
-router.route("/user/:userId").get(getUserPlaylists);
+router.route("/:playlistId/details").get(getPlaylistById);
 
 export default router;

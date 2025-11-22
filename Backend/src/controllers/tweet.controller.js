@@ -7,13 +7,15 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 const createTweet = asyncHandler(async (req, res) => {
   //TODO: create tweet
-  const userTweet = req.query;
-  if (!userTweet) {
+  const { content } = req.body;
+  const userTweet = req.query.tweet;
+
+  if (!content && !userTweet) {
     throw new ApiError(400, "Enter something inorder to post it");
   }
 
   const tweet = await Tweet.create({
-    content: userTweet?.tweet,
+    content: content || userTweet,
     owner: req.user?._id,
   });
 
@@ -28,22 +30,23 @@ const createTweet = asyncHandler(async (req, res) => {
 
 const getUserTweets = asyncHandler(async (req, res) => {
   // TODO: get user tweets
-  const tweet = await Tweet.find({
-    owner: new mongoose.Types.ObjectId(req.user?._id),
-  });
-  if (!tweet) {
-    throw new ApiError(500, "Something went wrong while fetching user tweets");
+  const { userId } = req.params;
+
+  if (!isValidObjectId(userId)) {
+    throw new ApiError(400, "Invalid user id");
   }
 
-  if (!tweet.length === 0) {
-    return res
-      .status(200)
-      .json(new ApiResponse(500, {}, "User has not made any tweets"));
+  const tweets = await Tweet.find({
+    owner: new mongoose.Types.ObjectId(userId),
+  }).populate("owner", "fullName avatar username");
+
+  if (!tweets) {
+    throw new ApiError(500, "Something went wrong while fetching user tweets");
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(500, tweet, "User tweets fetched Successfully"));
+    .json(new ApiResponse(200, tweets, "User tweets fetched Successfully"));
 });
 
 const updateTweet = asyncHandler(async (req, res) => {

@@ -32,23 +32,28 @@ function Login() {
         localStorage.setItem("full_name", userPayload.fullName);
       }
 
-      let redirectUsername = userPayload?.username;
+      let redirectUserId = userPayload?._id;
 
       await api
         .get("/users/current-user")
         .then((me) => {
           const currentUser = me.data?.data || me.data;
           const userId = currentUser?._id;
-          if (userId) localStorage.setItem("user_id", userId);
+          if (userId) {
+            localStorage.setItem("user_id", userId);
+            redirectUserId = userId;
+          }
           if (currentUser?.username) {
             localStorage.setItem("username", currentUser.username);
-            redirectUsername = currentUser.username;
+          }
+          if (currentUser?.fullName) {
+            localStorage.setItem("full_name", currentUser.fullName);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
 
-      if (redirectUsername) {
-        navigate(`/channel/${redirectUsername}`, { replace: true });
+      if (redirectUserId) {
+        navigate("/home", { replace: true });
       } else {
         navigate("/home", { replace: true });
       }

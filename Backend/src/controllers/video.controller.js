@@ -30,7 +30,13 @@ const getAllVideos = asyncHandler(async (req, res) => {
   const pipeline = [];
 
   //get videos with userId
-  const matchStage = { owner: new mongoose.Types.ObjectId(userId) };
+  const matchStage = {};
+  if (userId && isValidObjectId(userId)) {
+    matchStage.owner = new mongoose.Types.ObjectId(userId);
+  }
+
+  console.log("getAllVideos - userId:", userId);
+  console.log("getAllVideos - matchStage:", JSON.stringify(matchStage));
 
   //if query is given by user
   if (query) {
@@ -51,6 +57,26 @@ const getAllVideos = asyncHandler(async (req, res) => {
         },
         { $skip: (pageNumber - 1) * pageSize },
         { $limit: pageSize },
+        {
+          $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "owner",
+            pipeline: [
+              {
+                $project: {
+                  fullName: 1,
+                  username: 1,
+                  avatar: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: "$owner",
+        },
       ],
     },
   });
