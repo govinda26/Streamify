@@ -2,11 +2,23 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../lib/api";
 import PlaylistCard from "./PlaylistCard";
+import { useSearch } from "../context/SearchContext";
 
 function ChannelPlaylists({ channelId }) {
     const [playlists, setPlaylists] = useState([]);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { searchQuery } = useSearch();
+
+    const filteredPlaylists = React.useMemo(() => {
+        if (!searchQuery) return playlists;
+        const lowerQuery = searchQuery.toLowerCase();
+        return playlists.filter((playlist) =>
+            playlist.name?.toLowerCase().includes(lowerQuery) ||
+            playlist.description?.toLowerCase().includes(lowerQuery)
+        );
+    }, [playlists, searchQuery]);
 
     useEffect(() => {
         if (channelId) {
@@ -34,7 +46,7 @@ function ChannelPlaylists({ channelId }) {
         return <div className="text-center text-red-500">{error}</div>;
     }
 
-    if (playlists.length === 0) {
+    if (filteredPlaylists.length === 0) {
         return (
             <div className="flex justify-center p-4">
                 <div className="w-full max-w-sm text-center">
@@ -60,7 +72,9 @@ function ChannelPlaylists({ channelId }) {
                     </p>
                     <h5 className="mb-2 font-semibold text-white">No playlist created</h5>
                     <p className="text-gray-400">
-                        There are no playlist created on this channel.
+                        {searchQuery
+                            ? `No playlists found for "${searchQuery}"`
+                            : "There are no playlist created on this channel."}
                     </p>
                 </div>
             </div>
@@ -69,7 +83,7 @@ function ChannelPlaylists({ channelId }) {
 
     return (
         <div className="grid grid-cols-[repeat(auto-fit,_minmax(300px,_1fr))] gap-4 pt-2">
-            {playlists.map((playlist) => (
+            {filteredPlaylists.map((playlist) => (
                 <PlaylistCard
                     key={playlist._id}
                     playlist={playlist}

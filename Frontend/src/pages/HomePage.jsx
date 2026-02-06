@@ -1,44 +1,23 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import api from "../lib/api";
-
-const formatDuration = (seconds) => {
-    if (seconds === undefined || seconds === null) return "";
-    const totalSeconds = Math.max(0, Math.round(Number(seconds)));
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-    if (hours > 0) {
-        return [hours, minutes, secs]
-            .map((val) => String(val).padStart(2, "0"))
-            .join(":");
-    }
-    return [minutes, secs].map((val) => String(val).padStart(2, "0")).join(":");
-};
-
-const formatTimeAgo = (value) => {
-    if (!value) return "";
-    const date = new Date(value);
-    const now = new Date();
-    const diff = date.getTime() - now.getTime();
-    const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-    const minutes = Math.round(diff / (1000 * 60));
-    const hours = Math.round(diff / (1000 * 60 * 60));
-    const days = Math.round(diff / (1000 * 60 * 60 * 24));
-    const months = Math.round(diff / (1000 * 60 * 60 * 24 * 30));
-    const years = Math.round(diff / (1000 * 60 * 60 * 24 * 365));
-
-    if (Math.abs(minutes) < 60) return rtf.format(minutes, "minute");
-    if (Math.abs(hours) < 24) return rtf.format(hours, "hour");
-    if (Math.abs(days) < 30) return rtf.format(days, "day");
-    if (Math.abs(months) < 12) return rtf.format(months, "month");
-    return rtf.format(years, "year");
-};
+import { useSearch } from "../context/SearchContext";
+import VideoCard from "../components/VideoCard";
 
 function HomePage() {
     const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const { searchQuery } = useSearch();
+
+    const filteredVideos = useMemo(() => {
+        if (!searchQuery) return videos;
+        const lowerQuery = searchQuery.toLowerCase();
+        return videos.filter((video) => {
+            const titleMatch = video.title?.toLowerCase().includes(lowerQuery);
+            const ownerMatch = video.owner?.username?.toLowerCase().includes(lowerQuery) || video.owner?.fullName?.toLowerCase().includes(lowerQuery);
+            return titleMatch || ownerMatch;
+        });
+    }, [videos, searchQuery]);
 
     const fetchVideos = useCallback(async () => {
         setLoading(true);
@@ -69,7 +48,7 @@ function HomePage() {
         return <div className="flex justify-center p-8 text-red-500">{error}</div>;
     }
 
-    if (videos.length === 0) {
+    if (filteredVideos.length === 0) {
         return (
             <section className="w-full pb-[70px] sm:ml-[70px] sm:pb-0 lg:ml-0">
                 <div className="flex h-full items-center justify-center">
@@ -92,7 +71,11 @@ function HomePage() {
                             </span>
                         </p>
                         <h5 className="mb-2 font-semibold">No videos available</h5>
-                        <p>There are no videos here available. Please try to search some thing else.</p>
+                        <p>
+                          {searchQuery
+                            ? `No results found for "${searchQuery}"`
+                            : "There are no videos here available. Please try to search some thing else."}
+                        </p>
                     </div>
                 </div>
             </section>
@@ -102,51 +85,8 @@ function HomePage() {
     return (
         <section className="w-full pb-[70px] sm:ml-[70px] sm:pb-0 lg:ml-0">
             <div className="grid grid-cols-[repeat(auto-fit,_minmax(300px,_1fr))] gap-4 p-4">
-                {videos.map((video) => (
-                    <div key={video._id} className="w-full">
-                        <Link to={`/video/${video._id}`}>
-                            <div className="relative mb-2 w-full pt-[56%]">
-                                <div className="absolute inset-0">
-                                    <img
-                                        src={video.thumbnail}
-                                        alt={video.title}
-                                        className="h-full w-full object-cover"
-                                    />
-                                </div>
-                                <span className="absolute bottom-1 right-1 inline-block rounded bg-black px-1.5 text-sm">
-                                    {formatDuration(video.duration)}
-                                </span>
-                            </div>
-                        </Link>
-
-                        <div className="flex gap-x-2">
-                            <div className="h-10 w-10 shrink-0">
-                                <Link to={`/channel/id/${video.owner?._id}`}>
-                                    <img
-                                        src={
-                                            video.owner?.avatar ||
-                                            "https://images.pexels.com/photos/1115816/pexels-photo-1115816.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                                        }
-                                        alt={video.owner?.username}
-                                        className="h-full w-full rounded-full object-cover"
-                                    />
-                                </Link>
-                            </div>
-                            <div className="w-full">
-                                <Link to={`/video/${video._id}`}>
-                                    <h6 className="mb-1 font-semibold">{video.title}</h6>
-                                </Link>
-                                <p className="flex text-sm text-gray-200">
-                                    {video.views} views • {formatTimeAgo(video.createdAt)}
-                                </p>
-                                <Link to={`/channel/id/${video.owner?._id}`}>
-                                    <p className="text-sm text-gray-200">
-                                        {video.owner?.fullName || video.owner?.username}
-                                    </p>
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
+                {filteredVideos.map((video) => (
+                    <VideoCard key={video._id} video={video} />
                 ))}
             </div>
         </section>

@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from "react";
 import api from "../lib/api";
 import TweetItem from "./TweetItem";
+import { useSearch } from "../context/SearchContext";
 
 function TweetList({ channelId, currentUserId, refreshTrigger }) {
     const [tweets, setTweets] = useState([]);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { searchQuery } = useSearch();
+
+    const filteredTweets = React.useMemo(() => {
+        if (!searchQuery) return tweets;
+        const lowerQuery = searchQuery.toLowerCase();
+        return tweets.filter((tweet) =>
+            tweet.content?.toLowerCase().includes(lowerQuery)
+        );
+    }, [tweets, searchQuery]);
 
     useEffect(() => {
         if (channelId) {
@@ -35,7 +46,7 @@ function TweetList({ channelId, currentUserId, refreshTrigger }) {
         return <div className="text-center text-red-500">{error}</div>;
     }
 
-    if (tweets.length === 0) {
+    if (filteredTweets.length === 0) {
         return (
             <div className="flex justify-center p-4">
                 <div className="w-full max-w-sm text-center">
@@ -62,7 +73,9 @@ function TweetList({ channelId, currentUserId, refreshTrigger }) {
                     </p>
                     <h5 className="mb-2 font-semibold">No Tweets</h5>
                     <p>
-                        This channel has yet to make a <strong>Tweet</strong>.
+                        {searchQuery
+                            ? `No tweets found for "${searchQuery}"`
+                            : "This channel has yet to make a Tweet."}
                     </p>
                 </div>
             </div>
@@ -71,7 +84,7 @@ function TweetList({ channelId, currentUserId, refreshTrigger }) {
 
     return (
         <div>
-            {tweets.map((tweet) => (
+            {filteredTweets.map((tweet) => (
                 <TweetItem
                     key={tweet._id}
                     tweet={tweet}

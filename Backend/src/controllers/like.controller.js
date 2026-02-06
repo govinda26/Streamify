@@ -145,9 +145,9 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     },
   ]);
 
-  if (!like.length) {
-    throw new ApiError(500, "No liked videos found for this user");
-  }
+  // if (!like.length) {
+  //   throw new ApiError(500, "No liked videos found for this user");
+  // }
 
   return res
     .status(200)

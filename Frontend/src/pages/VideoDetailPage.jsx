@@ -345,7 +345,10 @@ function VideoDetailPage() {
               </h3>
               <div className="mb-6 flex gap-x-4">
                 <img
-                  src="https://images.pexels.com/photos/1115816/pexels-photo-1115816.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                  src={
+                    localStorage.getItem("avatar") ||
+                    "https://images.pexels.com/photos/1115816/pexels-photo-1115816.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                  }
                   alt="User"
                   className="h-10 w-10 rounded-full object-cover"
                 />

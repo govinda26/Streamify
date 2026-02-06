@@ -5,6 +5,9 @@ import Register from "./pages/Register";
 import VideoDetailPage from "./pages/VideoDetailPage";
 import PlaylistVideoPage from "./pages/PlaylistVideoPage";
 import HomePage from "./pages/HomePage";
+import LikedVideos from "./pages/LikedVideos";
+import MyPlaylists from "./pages/MyPlaylists";
+import MySubscribers from "./pages/MySubscribers";
 import "./App.css";
 
 import Layout from "./components/Layout";
@@ -29,6 +32,9 @@ function App() {
           <Route path="/channel/:channelId/playlist/:playlistId" element={<PlaylistVideoPage />} />
           <Route path="/video/:videoId" element={<VideoDetailPage />} />
           <Route path="/home" element={<HomePage />} />
+          <Route path="/liked-videos" element={<LikedVideos />} />
+          <Route path="/collections" element={<MyPlaylists />} />
+          <Route path="/subscribers" element={<MySubscribers />} />
           <Route path="/my-channel" element={<RedirectToChannel />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

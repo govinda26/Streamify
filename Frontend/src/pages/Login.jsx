@@ -31,6 +31,9 @@ function Login() {
       if (userPayload?.fullName) {
         localStorage.setItem("full_name", userPayload.fullName);
       }
+      if (userPayload?.avatar) {
+        localStorage.setItem("avatar", userPayload.avatar);
+      }
 
       let redirectUserId = userPayload?._id;
 
@@ -48,6 +51,9 @@ function Login() {
           }
           if (currentUser?.fullName) {
             localStorage.setItem("full_name", currentUser.fullName);
+          }
+          if (currentUser?.avatar) {
+            localStorage.setItem("avatar", currentUser.avatar);
           }
         })
         .catch(() => { });

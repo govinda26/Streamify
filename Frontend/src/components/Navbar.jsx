@@ -1,14 +1,33 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import api from "../lib/api";
+import { useSearch } from "../context/SearchContext";
 
 function Navbar() {
+  const navigate = useNavigate();
+  const { searchQuery, setSearchQuery } = useSearch();
   const userId = localStorage.getItem("user_id");
-  const avatar = "https://images.pexels.com/photos/1115816/pexels-photo-1115816.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"; // Default or fetch from somewhere if possible, but localStorage usually doesn't have avatar. 
+  const avatar = localStorage.getItem("avatar") || "https://images.pexels.com/photos/1115816/pexels-photo-1115816.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"; 
   // Actually, the user request says "Ensure user._id exists by checking AuthContext". 
   // But I don't see AuthContext in the file list I checked earlier. 
   // Login.jsx sets 'user_id', 'username', 'full_name'. It doesn't seem to set 'avatar'.
   // I'll use a placeholder or try to find where avatar is stored. 
   // The hardcoded pages use a static pexels image. I will use that for now to match the look, or check if I can get it.
-  // Wait, Login.jsx gets `userPayload`. 
+  // Login.jsx gets `userPayload`. 
+  
+  const handleLogout = async () => {
+    try {
+      await api.post("/users/logout");
+    } catch (error) {
+      console.log("Logout failed", error);
+    } finally {
+      localStorage.removeItem("user_id");
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("full_name");
+      localStorage.removeItem("username");
+      localStorage.removeItem("avatar");
+      navigate("/login");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white bg-[#121212] px-4">
@@ -74,6 +93,8 @@ function Navbar() {
           <input
             className="w-full border bg-transparent py-1 pl-8 pr-3 placeholder-white outline-none sm:py-2"
             placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
           <span className="absolute left-2.5 top-1/2 inline-block -translate-y-1/2">
             <svg
@@ -93,21 +114,29 @@ function Navbar() {
             </svg>
           </span>
         </div>
-        <button className="ml-auto inline-flex items-center justify-center rounded-full outline-none transition-transform duration-150 hover:scale-105">
+        <div className="ml-auto inline-flex items-center justify-center rounded-full outline-none transition-transform duration-150">
           {userId ? (
-            <Link to={`/channel/id/${userId}`}>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleLogout}
+                className="bg-[#ae7aff] px-3 py-1.5 text-black font-bold rounded hover:bg-[#ae7aff]/80"
+              >
+                Logout
+              </button>
+              <Link to={`/channel/id/${userId}`}>
               <img
                 src={avatar}
                 alt="profile"
                 className="h-8 w-8 rounded-full object-cover"
               />
-            </Link>
+              </Link>
+            </div>
           ) : (
             <Link to="/login" className="rounded-md bg-[#ae7aff] px-3 py-1.5 text-sm font-semibold text-black hover:bg-[#ae7aff]/80">
               Log in
             </Link>
           )}
-        </button>
+        </div>
       </nav>
     </header>
   );

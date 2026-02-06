@@ -1,56 +1,17 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../lib/api";
+import { useSearch } from "../context/SearchContext";
 import UploadVideoModal from "../components/UploadVideoModal";
 import ChannelPlaylists from "../components/ChannelPlaylists";
 import TweetInput from "../components/TweetInput";
 import TweetList from "../components/TweetList";
 import SubscribedList from "../components/SubscribedList";
 
+import VideoCard from "../components/VideoCard";
+import { formatViews } from "../utils/format";
+
 const tabs = ["Videos", "Playlist", "Tweets", "Subscribed"];
-
-const formatDuration = (seconds) => {
-  if (seconds === undefined || seconds === null) return "";
-  const totalSeconds = Math.max(0, Math.round(Number(seconds)));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const secs = totalSeconds % 60;
-  if (hours > 0) {
-    return [hours, minutes, secs]
-      .map((val) => String(val).padStart(2, "0"))
-      .join(":");
-  }
-  return [minutes, secs].map((val) => String(val).padStart(2, "0")).join(":");
-};
-
-const formatViews = (views) => {
-  if (views === undefined || views === null) return "0 views";
-  if (views < 1000) return `${views} views`;
-  const formatter = new Intl.NumberFormat("en", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  });
-  return `${formatter.format(views)} views`;
-};
-
-const formatTimeAgo = (value) => {
-  if (!value) return "";
-  const date = new Date(value);
-  const now = new Date();
-  const diff = date.getTime() - now.getTime();
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  const minutes = Math.round(diff / (1000 * 60));
-  const hours = Math.round(diff / (1000 * 60 * 60));
-  const days = Math.round(diff / (1000 * 60 * 60 * 24));
-  const months = Math.round(diff / (1000 * 60 * 60 * 24 * 30));
-  const years = Math.round(diff / (1000 * 60 * 60 * 24 * 365));
-
-  if (Math.abs(minutes) < 60) return rtf.format(minutes, "minute");
-  if (Math.abs(hours) < 24) return rtf.format(hours, "hour");
-  if (Math.abs(days) < 30) return rtf.format(days, "day");
-  if (Math.abs(months) < 12) return rtf.format(months, "month");
-  return rtf.format(years, "year");
-};
 
 const extractVideos = (payload) => {
   if (!payload) return [];
@@ -86,8 +47,21 @@ function MyChannelPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
+
   const [uploadError, setUploadError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(null);
+  const { searchQuery } = useSearch();
+
+  const filteredVideos = useMemo(() => {
+    if (!searchQuery) return videos;
+    const lowerQuery = searchQuery.toLowerCase();
+    return videos.filter((video) => {
+      return (
+        video.title?.toLowerCase().includes(lowerQuery) ||
+        video.description?.toLowerCase().includes(lowerQuery)
+      );
+    });
+  }, [videos, searchQuery]);
 
   const resetFormState = useCallback(() => {
     setVideoFile(null);
@@ -339,49 +313,15 @@ function MyChannelPage() {
               <div className="col-span-full text-center text-red-500">
                 {videosError}
               </div>
-            ) : videos.length === 0 && !isOwnChannel ? (
+            ) : filteredVideos.length === 0 && !isOwnChannel ? (
               <div className="col-span-full text-center text-white">
-                No videos available
+                {searchQuery
+                  ? `No results found for "${searchQuery}"`
+                  : "No videos available"}
               </div>
             ) : (
-              videos.map((video) => (
-                <div key={video._id} className="w-full">
-                  <Link to={`/video/${video._id}`}>
-                    <div className="relative mb-2 w-full pt-[56%]">
-                      <div className="absolute inset-0">
-                        <img
-                          src={video.thumbnail}
-                          alt={video.title}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <span className="absolute bottom-1 right-1 inline-block rounded bg-black px-1.5 text-sm">
-                        {formatDuration(video.duration)}
-                      </span>
-                    </div>
-                  </Link>
-                  <div className="flex gap-x-2">
-                    <div className="h-10 w-10 shrink-0">
-                      <img
-                        src={
-                          channel?.avatar ||
-                          "https://images.pexels.com/photos/1115816/pexels-photo-1115816.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                        }
-                        alt={channel?.username}
-                        className="h-full w-full rounded-full object-cover"
-                      />
-                    </div>
-                    <div className="w-full">
-                      <h6 className="mb-1 font-semibold">{video.title}</h6>
-                      <p className="flex text-sm text-gray-200">
-                        {formatViews(video.views)} • {formatTimeAgo(video.createdAt)}
-                      </p>
-                      <p className="text-sm text-gray-200">
-                        {channel?.fullName || channel?.username}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              filteredVideos.map((video) => (
+                <VideoCard key={video._id} video={video} />
               ))
             )}
           </div>
@@ -412,7 +352,7 @@ function MyChannelPage() {
             setIsModalOpen(false);
             resetFormState();
           }}
-          onUpload={handleUpload}
+          onSave={handleUpload}
           videoFile={videoFile}
           setVideoFile={setVideoFile}
           thumbnailFile={thumbnailFile}
